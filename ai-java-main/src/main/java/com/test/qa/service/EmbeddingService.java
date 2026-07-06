@@ -44,26 +44,34 @@ public class EmbeddingService {
     private volatile String collectionId;
 
     /**
-     * 将单条文本转为向量（调用 Ollama Embedding API，返回 List<Double> 适配 ChromaDB）
+     * 将单条文本转为向量（调用 Ollama OpenAI 兼容 Embedding API，返回 List<Double> 适配 ChromaDB）
      */
     @SuppressWarnings("unchecked")
     public List<Double> embed(String text) {
         Map<String, Object> requestBody = Map.of(
                 "model", ollamaEmbeddingModel,
-                "prompt", text
+                "input", text
         );
         Map<String, Object> response = ollamaWebClient.post()
-                .uri("/api/embeddings")
+                .uri("/v1/embeddings")
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(Map.class)
                 .block();
 
-        if (response == null || !response.containsKey("embedding")) {
+        if (response == null || !response.containsKey("data")) {
             throw new RuntimeException("Ollama Embedding 返回为空");
         }
-        List<Double> embedding = (List<Double>) response.get("embedding");
-        return embedding;
+        // /v1/embeddings 返回 {"data": [{"embedding": [...], "index": 0}], ...}
+        List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
+        if (data == null || data.isEmpty()) {
+            throw new RuntimeException("Ollama Embedding 返回空列表");
+        }
+        Object embedding = data.get(0).get("embedding");
+        if (embedding instanceof List<?> list) {
+            return (List<Double>) list;
+        }
+        throw new RuntimeException("Ollama Embedding 返回格式异常");
     }
 
     /**

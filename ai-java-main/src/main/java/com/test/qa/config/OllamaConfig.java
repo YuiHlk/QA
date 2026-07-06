@@ -1,6 +1,7 @@
 package com.test.qa.config;
 
 import io.netty.channel.ChannelOption;
+import io.netty.handler.logging.LogLevel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -9,7 +10,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.HttpProtocol;
 import reactor.netty.http.client.HttpClient;
+import reactor.netty.transport.logging.AdvancedByteBufFormat;
 
 import java.time.Duration;
 
@@ -32,7 +35,9 @@ public class OllamaConfig {
     public WebClient ollamaWebClient() {
         log.info("Ollama Embedding WebClient initialized: {}", embeddingUrl);
         HttpClient httpClient = HttpClient.create()
+                .protocol(HttpProtocol.HTTP11)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 30_000)
+                .wiretap("reactor.netty.http.client", LogLevel.DEBUG, AdvancedByteBufFormat.TEXTUAL)
                 .responseTimeout(Duration.ofSeconds(60));
         return WebClient.builder()
                 .baseUrl(embeddingUrl)

@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * 异步线程池配置
@@ -35,6 +36,11 @@ public class AsyncConfig {
         executor.setThreadNamePrefix(threadNamePrefix);
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(60);
+        //设置非核心线程空闲销毁时间
+        executor.setKeepAliveSeconds(30);
+        //指定拒绝策略(池子满了交给 Tomcat 请求线程同步执行)
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+
         executor.initialize();
         return executor;
     }

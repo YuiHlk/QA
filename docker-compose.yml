@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # ============================
   # 基础设施层
@@ -15,7 +13,7 @@ services:
       MYSQL_USER: ${MYSQL_USER:-qa_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-qa_pass123}
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql-data:/var/lib/mysql
       - ./ai-java-main/src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -35,49 +33,84 @@ services:
     container_name: qa-chromadb
     restart: unless-stopped
     ports:
-      - "${CHROMADB_PORT:-8001}:8000"
+      - "${CHROMADB_PORT:-8000}:8000"
     environment:
       IS_PERSISTENT: "TRUE"
       ANONYMIZED_TELEMETRY: "FALSE"
     volumes:
       - chroma-data:/chroma/chroma
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/8000"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 20s
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: qa-ollama
+    restart: unless-stopped
+    ports:
+      - "${OLLAMA_PORT:-11435}:11434"
+    environment:
+      OLLAMA_KEEP_ALIVE: 24h
+      OLLAMA_HOST: 0.0.0.0
+    volumes:
+      - ollama-data:/root/.ollama
+    # GPU 加速（Windows Docker Desktop 通常不支持，Linux 下取消注释）
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # ============================
   # 应用服务层
   # ============================
 
   backend:
-    build: ./ai-java-main
+    build:
+      context: .
+      dockerfile: ai-java-main/Dockerfile
     container_name: qa-backend
     restart: unless-stopped
     ports:
-      - "${BACKEND_PORT:-8080}:8080"
+      - "${BACKEND_PORT:-8081}:8080"
     environment:
       # 数据库
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-qa_platform}?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Shanghai&useSSL=false
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-qa_platform}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-qa_user}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-qa_pass123}
-      # AI 模型
+      # AI 模型（云端 API，非本地 Ollama）
       AI_API_KEY: ${AI_API_KEY:-sk-your-api-key-here}
       AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com}
       AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-ada-002}
-      # ChromaDB
+      # Ollama 本地模型（chat + embedding 均走 Docker 服务名 ollama:11434）
+      OLLAMA_CHAT_URL: http://ollama:11434
+      OLLAMA_EMBEDDING_URL: http://ollama:11434
+      # ChromaDB（Docker 服务名）
       CHROMADB_HOST: chromadb
       CHROMADB_PORT: 8000
-      # Python 微调服务
-      PYTHON_TRAIN_URL: ${PYTHON_TRAIN_URL:-http://python-train:8002}
+      # 文件上传
+      QA_FILE_UPLOAD_DIR: /app/uploads
+      # Python 微调服务（Docker 服务名）
+      PYTHON_TRAIN_BASE_URL: http://python-train:8002
     depends_on:
       mysql:
         condition: service_healthy
       chromadb:
         condition: service_healthy
+    volumes:
+      - uploads-data:/app/uploads
 
   frontend:
     build: ./ai-frontend
@@ -106,3 +139,5 @@ services:
 volumes:
   mysql-data:
   chroma-data:
+  ollama-data:
+  uploads-data:

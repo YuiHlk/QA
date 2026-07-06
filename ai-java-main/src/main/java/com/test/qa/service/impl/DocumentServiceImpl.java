@@ -20,6 +20,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -92,9 +94,15 @@ public class DocumentServiceImpl
             doc.setStatus("PROCESSING");
             save(doc);
 
-            // 3. 异步处理文档（通过代理调用，确保 @Async 生效）
-            context.getBean(DocumentService.class).processDocument(doc.getId());
-            log.info("文档上传成功: id={}, name={}, type={}, size={}", doc.getId(), originalName, fileType, file.getSize());
+            // 3. 异步处理文档（必须在事务提交后触发，否则异步线程读不到刚插入的记录）
+            Long docId = doc.getId();
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    context.getBean(DocumentService.class).processDocument(docId);
+                }
+            });
+            log.info("文档上传成功: id={}, name={}, type={}, size={}", docId, originalName, fileType, file.getSize());
             return doc;
         } catch (IOException e) {
             log.error("文件保存失败: {}", originalName, e);

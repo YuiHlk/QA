@@ -24,7 +24,7 @@ public class ChromaClientConfig {
     @Value("${chromadb.host:localhost}")
     private String host;
 
-    @Value("${chromadb.port:8001}")
+    @Value("${chromadb.port:8000}")
     private int port;
 
     @Bean

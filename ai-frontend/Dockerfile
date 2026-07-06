@@ -1,7 +1,7 @@
 # 前端 Vue3 应用 Dockerfile
 # 多阶段构建：Node 编译 + Nginx 静态服务
 
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /build
 
 # 利用 Docker 缓存层：先复制依赖文件
@@ -22,7 +22,7 @@ COPY --from=builder /build/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
-  CMD wget -qO- http://localhost:3000/ || exit 1
+  CMD wget -qO- http://127.0.0.1:3000/ || exit 1
 
 EXPOSE 3000
 ENTRYPOINT ["nginx", "-g", "daemon off;"]
