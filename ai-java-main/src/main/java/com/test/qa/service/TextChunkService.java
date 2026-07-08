@@ -56,6 +56,7 @@ public class TextChunkService {
             return chunks;
         }
 
+        //文本分块核心逻辑
         int start = 0;
         while (start < text.length()) {
             int end = Math.min(start + chunkSize, text.length());

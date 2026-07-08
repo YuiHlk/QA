@@ -9,7 +9,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -59,13 +61,15 @@ public class RetrievalService {
         List<RagChunk> chunks = ragChunkMapper.selectList(wrapper);
 
         // 3. 按 ChromaDB 返回的顺序排序（保证相关度顺序）
+        Map<String, RagChunk> chunkMap = new HashMap<>();
+        for (RagChunk chunk : chunks) {
+            chunkMap.put(chunk.getChunkEmbeddingId(), chunk);
+        }
         List<String> orderedTexts = new ArrayList<>();
         for (String eid : embeddingIds) {
-            for (RagChunk chunk : chunks) {
-                if (eid.equals(chunk.getChunkEmbeddingId())) {
-                    orderedTexts.add(chunk.getChunkText());
-                    break;
-                }
+            RagChunk chunk = chunkMap.get(eid);
+            if (chunk != null) {
+                orderedTexts.add(chunk.getChunkText());
             }
         }
         log.info("检索结果: query='{}', topK={}, returned={}", queryText, topK, orderedTexts.size());

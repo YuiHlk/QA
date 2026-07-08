@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.test.qa.domain.RagDocument;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 /**
  * 文档管理 Service
  */
@@ -34,4 +36,9 @@ public interface DocumentService extends IService<RagDocument> {
      * 异步处理文档（解析→分块→向量化→入库）
      */
     void processDocument(Long documentId);
+
+    /**
+     * 将分块和向量ID写入 MySQL 并更新文档状态（事务保护）
+     */
+    void saveChunksAndUpdateStatus(Long documentId, List<String> chunks, List<String> embeddingIds);
 }

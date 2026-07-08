@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +32,7 @@ public class EmbeddingService {
         this.chromaWebClient = chromaWebClient;
     }
 
-    @Value("${ollama.embedding.model:bge-m3}")
+    @Value("${ollama.embedding.model:nomic-embed-text}")
     private String ollamaEmbeddingModel;
 
     @Value("${chromadb.collection-name:qa_knowledge_base}")
@@ -44,13 +45,20 @@ public class EmbeddingService {
     private volatile String collectionId;
 
     /**
-     * 将单条文本转为向量（调用 Ollama OpenAI 兼容 Embedding API，返回 List<Double> 适配 ChromaDB）
+     * 将单条文本转为向量，直接复用批量接口。
+     */
+    public List<Double> embed(String text) {
+        return embedBatch(List.of(text)).get(0);
+    }
+
+    /**
+     * 批量向量化：一次 HTTP 调用传入全部文本，返回对应的向量列表
      */
     @SuppressWarnings("unchecked")
-    public List<Double> embed(String text) {
+    public List<List<Double>> embedBatch(List<String> texts) {
         Map<String, Object> requestBody = Map.of(
                 "model", ollamaEmbeddingModel,
-                "input", text
+                "input", texts
         );
         Map<String, Object> response = ollamaWebClient.post()
                 .uri("/v1/embeddings")
@@ -60,37 +68,51 @@ public class EmbeddingService {
                 .block();
 
         if (response == null || !response.containsKey("data")) {
-            throw new RuntimeException("Ollama Embedding 返回为空");
+            throw new RuntimeException("Ollama Embedding 批量调用返回为空");
         }
-        // /v1/embeddings 返回 {"data": [{"embedding": [...], "index": 0}], ...}
         List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
         if (data == null || data.isEmpty()) {
-            throw new RuntimeException("Ollama Embedding 返回空列表");
+            throw new RuntimeException("Ollama Embedding 批量调用返回空列表");
         }
-        Object embedding = data.get(0).get("embedding");
+        // 按 index 排序后提取 embedding
+        List<List<Double>> embeddings = new ArrayList<>();
+        for (Map<String, Object> item : data) {
+            embeddings.add(toDoubleList(item.get("embedding")));
+        }
+        return embeddings;
+    }
+
+    /**
+     * 将 Ollama 返回的 embedding 数组安全转换为 List&lt;Double&gt;。
+     * Jackson 反序列化时小整数可能为 Integer，直接用 (List&lt;Double&gt;) 强转会抛 ClassCastException。
+     */
+    private static List<Double> toDoubleList(Object embedding) {
         if (embedding instanceof List<?> list) {
-            return (List<Double>) list;
+            List<Double> result = new ArrayList<>(list.size());
+            for (Object item : list) {
+                if (item instanceof Number num) {
+                    result.add(num.doubleValue());
+                } else {
+                    throw new RuntimeException("Ollama Embedding 返回非数字元素: " + item.getClass());
+                }
+            }
+            return result;
         }
         throw new RuntimeException("Ollama Embedding 返回格式异常");
     }
 
     /**
-     * 批量向量化 + 存入 ChromaDB
+     * 将向量及对应文本存入 ChromaDB，返回每个 chunk 的向量 ID 列表。
      *
-     * @param chunks 分块文本列表
-     * @return 每个chunk在ChromaDB中的向量ID列表
+     * @param chunks     原始文本块
+     * @param embeddings 对应的向量（顺序须一致）
      */
-    public List<String> embedAndStore(List<String> chunks) {
-        // 0. 确保 collection 存在并获取 UUID
+    public List<String> storeEmbeddings(List<String> chunks, List<List<Double>> embeddings) {
+        if (chunks == null || chunks.isEmpty()) {
+            return List.of();
+        }
         String collId = getCollectionId();
 
-        // 1. 批量生成向量
-        List<List<Double>> embeddings = new ArrayList<>();
-        for (String chunk : chunks) {
-            embeddings.add(embed(chunk));
-        }
-
-        // 2. 生成唯一ID，调用 ChromaDB API 批量存储
         List<String> ids = new ArrayList<>();
         for (int i = 0; i < chunks.size(); i++) {
             ids.add(UUID.randomUUID().toString());
@@ -105,14 +127,16 @@ public class EmbeddingService {
             log.info("ChromaDB add: collection={}, ids.size={}, dim={}",
                     collectionName, ids.size(),
                     embeddings.isEmpty() ? 0 : embeddings.get(0).size());
+
             chromaWebClient.post()
                     .uri(CHROMA_V2 + "/{coll_id}/add", collId)
                     .bodyValue(body)
                     .retrieve()
                     .toBodilessEntity()
                     .block();
+
             log.info("存入ChromaDB: collection={}, count={}", collectionName, ids.size());
-        } catch (org.springframework.web.reactive.function.client.WebClientResponseException e) {
+        } catch (WebClientResponseException e) {
             log.error("ChromaDB存储失败 [{}]: {}", e.getStatusCode(), e.getResponseBodyAsString());
             throw new RuntimeException("向量存储失败: " + e.getMessage(), e);
         } catch (Exception e) {
@@ -158,6 +182,27 @@ public class EmbeddingService {
         } catch (Exception e) {
             log.error("ChromaDB查询失败", e);
             throw new RuntimeException("向量检索失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 从 ChromaDB 删除指定 ID 的向量
+     */
+    public void deleteByIds(List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        String collId = getCollectionId();
+        try {
+            chromaWebClient.post()
+                    .uri(CHROMA_V2 + "/{coll_id}/delete", collId)
+                    .bodyValue(Map.of("ids", ids))
+                    .retrieve()
+                    .toBodilessEntity()
+                    .block();
+            log.info("ChromaDB向量已删除: collection={}, count={}", collectionName, ids.size());
+        } catch (Exception e) {
+            log.error("ChromaDB删除向量失败: collection={}, count={}", collectionName, ids.size(), e);
         }
     }
 

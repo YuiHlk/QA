@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
  * Python服务返回JSON，Java负责持久化和状态管理。
  */
 @Data
-@TableName("train_task")
+@TableName("train_task") //声明当前实体类 TrainTask 映射数据库中的 train_task 数据表
 @Schema(description = "Python微调任务记录")
 public class TrainTask {
 

@@ -80,18 +80,19 @@ public class DocumentServiceImpl
         try {
             Path uploadPath = Paths.get(uploadDir);
             Files.createDirectories(uploadPath);
-            Path filePath = uploadPath.resolve(storedName);
+            Path filePath = uploadPath.resolve(storedName);//拼接路径，将文件名拼接到根目录后面
             file.transferTo(filePath.toFile());
 
             // 2. 创建文档记录
-            RagDocument doc = new RagDocument();
-            doc.setFileName(originalName);
-            doc.setFileType(fileType);
-            doc.setFileSize(file.getSize());
-            doc.setFilePath(filePath.toString());
-            doc.setChunkSize(chunkSize);
-            doc.setChunkOverlap(chunkOverlap);
-            doc.setStatus("PROCESSING");
+            RagDocument doc = RagDocument.builder()
+                    .fileName(originalName)
+                    .fileType(fileType)
+                    .fileSize(file.getSize())
+                    .filePath(filePath.toString())
+                    .chunkSize(chunkSize)
+                    .chunkOverlap(chunkOverlap)
+                    .status("PROCESSING")
+                    .build();
             save(doc);
 
             // 3. 异步处理文档（必须在事务提交后触发，否则异步线程读不到刚插入的记录）
@@ -112,11 +113,11 @@ public class DocumentServiceImpl
 
     /**
      * 异步处理文档：解析文本 → 分块 → 向量化 → 入库
-     * 使用 @Async 避免阻塞上传接口响应
+     * 使用 @Async 避免阻塞上传接口响应。
+     * 注意：不在方法级别加 @Transactional，因为向量化/存储涉及外部 HTTP 调用，
+     * 会长时间占用数据库连接。
      */
-    @Override
     @Async
-    @Transactional
     public void processDocument(Long documentId) {
         RagDocument doc = getById(documentId);
         if (doc == null) return;
@@ -133,30 +134,37 @@ public class DocumentServiceImpl
             log.info("文档分块完成: docId={}, chunks={}, chunkSize={}, overlap={}",
                     documentId, chunks.size(), doc.getChunkSize(), overlap);
 
-            // 3. 向量化 + 存入 ChromaDB
-            List<String> embeddingIds = embeddingService.embedAndStore(chunks);
+            // 3. 向量化 → 存入 ChromaDB（外部 HTTP 调用，不在事务内）
+            List<List<Double>> embeddings = embeddingService.embedBatch(chunks);
+            List<String> embeddingIds = embeddingService.storeEmbeddings(chunks, embeddings);
 
-            // 4. 分块记录入库（MySQL）
-            for (int i = 0; i < chunks.size(); i++) {
-                RagChunk chunk = new RagChunk();
-                chunk.setDocumentId(documentId);
-                chunk.setChunkIndex(i);
-                chunk.setChunkText(chunks.get(i));
-                chunk.setChunkEmbeddingId(embeddingIds.get(i));
-                chunk.setCharCount(chunks.get(i).length());
-                ragChunkMapper.insert(chunk);
-            }
-
-            // 5. 更新文档状态
-            doc.setChunkCount(chunks.size());
-            doc.setStatus("COMPLETED");
-            updateById(doc);
-            log.info("文档处理完成: docId={}, chunks={}", documentId, chunks.size());
+            // 4. 分块记录入库 + 更新状态（事务仅包裹 MySQL 操作）
+            context.getBean(DocumentService.class).saveChunksAndUpdateStatus(documentId, chunks, embeddingIds);
         } catch (Exception e) {
             log.error("文档处理失败: docId={}", documentId, e);
             doc.setStatus("FAILED");
             updateById(doc);
         }
+    }
+
+    @Transactional
+    public void saveChunksAndUpdateStatus(Long documentId, List<String> chunks, List<String> embeddingIds) {
+        for (int i = 0; i < chunks.size(); i++) {
+            RagChunk chunk = new RagChunk();
+            chunk.setDocumentId(documentId);
+            chunk.setChunkIndex(i);
+            chunk.setChunkText(chunks.get(i));
+            chunk.setChunkEmbeddingId(embeddingIds.get(i));
+            chunk.setCharCount(chunks.get(i).length());
+            ragChunkMapper.insert(chunk);
+        }
+        RagDocument doc = getById(documentId);
+        if (doc != null) {
+            doc.setChunkCount(chunks.size());
+            doc.setStatus("COMPLETED");
+            updateById(doc);
+        }
+        log.info("文档处理完成: docId={}, chunks={}", documentId, chunks.size());
     }
 
     @Override
@@ -172,13 +180,24 @@ public class DocumentServiceImpl
     @Override
     @Transactional
     public void deleteDocument(Long id) {
-        // 删除关联分块
+        // 1. 先查出关联分块的 embedding ID 列表
         LambdaQueryWrapper<RagChunk> chunkWrapper = new LambdaQueryWrapper<>();
+        chunkWrapper.select(RagChunk::getChunkEmbeddingId).eq(RagChunk::getDocumentId, id);
+        List<String> embeddingIds = ragChunkMapper.selectList(chunkWrapper).stream()
+                .map(RagChunk::getChunkEmbeddingId)
+                .toList();
+
+        // 2. 删除 ChromaDB 向量（失败不影响 MySQL 删除）
+        if (!embeddingIds.isEmpty()) {
+            embeddingService.deleteByIds(embeddingIds);
+        }
+
+        // 3. 删除关联分块 & 文档记录
+        chunkWrapper = new LambdaQueryWrapper<>();
         chunkWrapper.eq(RagChunk::getDocumentId, id);
         ragChunkMapper.delete(chunkWrapper);
-        // 删除文档记录
         removeById(id);
-        log.info("文档及关联分块已删除: docId={}", id);
+        log.info("文档及关联分块已删除: docId={}, vectors={}", id, embeddingIds.size());
     }
 
     /**
