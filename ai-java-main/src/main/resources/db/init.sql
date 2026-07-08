@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS prompt_template (
     remark VARCHAR(500) DEFAULT '' COMMENT '版本备注',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    INDEX idx_scene_version (scene, version),
+    UNIQUE INDEX idx_scene_version (scene, version),
     INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='提示词模板版本库';
 

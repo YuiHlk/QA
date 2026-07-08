@@ -51,6 +51,10 @@ public class PromptTemplate {
     @Schema(description = "版本号（同一场景递增）", example = "1")
     private Integer version;
 
+    public static final String STATUS_ACTIVE   = "ACTIVE";
+    public static final String STATUS_ARCHIVED = "ARCHIVED";
+    public static final String STATUS_DRAFT    = "DRAFT";
+
     @Schema(description = "状态: ACTIVE-启用, ARCHIVED-归档, DRAFT-草稿", example = "ACTIVE")
     private String status;
 

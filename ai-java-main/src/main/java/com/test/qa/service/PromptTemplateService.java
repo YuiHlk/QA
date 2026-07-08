@@ -25,10 +25,19 @@ public interface PromptTemplateService extends IService<PromptTemplate> {
     /**
      * 新增提示词模板（自动处理版本号：同场景版本+1）
      *
-     * @param template 模板实体
+     * @param template 模板实体（仅含业务字段）
      * @return 保存后的实体（含自动生成的版本号）
      */
     PromptTemplate create(PromptTemplate template);
+
+    /**
+     * 更新提示词模板（仅更新非空字段，支持部分更新）
+     *
+     * @param id       模板ID
+     * @param template 模板实体（仅 set 了需要更新的字段）
+     * @return 更新后的完整实体，不存在则返回 null
+     */
+    PromptTemplate update(Long id, PromptTemplate template);
 
     /**
      * 获取指定场景的所有版本
