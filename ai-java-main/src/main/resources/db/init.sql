@@ -143,6 +143,7 @@ CREATE TABLE IF NOT EXISTS train_task (
     metrics JSON COMMENT '训练指标JSON {loss, eval_loss, ...}',
     status VARCHAR(20) DEFAULT 'PENDING' COMMENT '状态: PENDING, TRAINING, COMPLETED, FAILED',
     error_msg TEXT COMMENT '错误信息',
+    version INT DEFAULT 0 COMMENT '乐观锁版本号',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_status (status)

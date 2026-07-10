@@ -34,20 +34,21 @@ public class TrainController {
             @Parameter(description = "数据集路径（可选）") @RequestParam(required = false) String datasetPath,
             @Parameter(description = "LoRA rank（默认64）") @RequestParam(defaultValue = "64") int loraRank,
             @Parameter(description = "LoRA alpha（默认16）") @RequestParam(defaultValue = "16") int loraAlpha,
-            @Parameter(description = "学习率（默认2e-4）") @RequestParam(defaultValue = "2e-4") double learningRate,
+            @Parameter(description = "学习率（默认0.0002）") @RequestParam(defaultValue = "0.0002") double learningRate,
             @Parameter(description = "训练轮数（默认3）") @RequestParam(defaultValue = "3") int numEpochs,
             @Parameter(description = "batch size（默认4）") @RequestParam(defaultValue = "4") int batchSize) {
 
-        TrainTask task = new TrainTask();
-        task.setTaskName(taskName);
-        task.setModelBase(modelBase);
-        task.setDatasetName(datasetName);
-        task.setDatasetPath(datasetPath);
-        task.setLoraRank(loraRank);
-        task.setLoraAlpha(loraAlpha);
-        task.setLearningRate(learningRate);
-        task.setNumEpochs(numEpochs);
-        task.setBatchSize(batchSize);
+        TrainTask task = TrainTask.builder()
+                .taskName(taskName)
+                .modelBase(modelBase)
+                .datasetName(datasetName)
+                .datasetPath(datasetPath)
+                .loraRank(loraRank)
+                .loraAlpha(loraAlpha)
+                .learningRate(learningRate)
+                .numEpochs(numEpochs)
+                .batchSize(batchSize)
+                .build();
 
         return Result.success(trainTaskService.createAndStart(task));
     }

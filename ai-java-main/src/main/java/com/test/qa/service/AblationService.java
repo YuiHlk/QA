@@ -144,6 +144,7 @@ public class AblationService {
         return results;
     }
 
+    //笛卡尔乘积核心逻辑
     private void cartesianProduct(Map<String, Object> baseConfig,
                                    List<String> varNames,
                                    List<List<Object>> varValues,
@@ -429,7 +430,6 @@ public class AblationService {
         return Math.round(value * 100.0) / 100.0;
     }
 
-    @SuppressWarnings("unchecked")
     private String findBest(List<Map<String, Object>> groups, String metric, boolean higherIsBetter) {
         return groups.stream()
                 .min((a, b) -> {

@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -17,6 +19,7 @@ import java.time.LocalDateTime;
  * Python服务返回JSON，Java负责持久化和状态管理。
  */
 @Data
+@Builder
 @TableName("train_task") //声明当前实体类 TrainTask 映射数据库中的 train_task 数据表
 @Schema(description = "Python微调任务记录")
 public class TrainTask {
@@ -103,4 +106,8 @@ public class TrainTask {
     @Schema(description = "更新时间")
     @TableField("update_time")
     private LocalDateTime updateTime;
+
+    @Version
+    @Schema(description = "乐观锁版本号")
+    private Integer version;
 }
