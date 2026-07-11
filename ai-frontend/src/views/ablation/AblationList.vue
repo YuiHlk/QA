@@ -1,49 +1,69 @@
 <template>
   <div class="ablation-page">
-    <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>消融实验</span>
-          <el-button type="primary" @click="openCreateDialog">
-            <el-icon><Plus /></el-icon> 新建实验
-          </el-button>
-        </div>
-      </template>
+    <!-- 页面标题栏 -->
+    <div class="page-toolbar stagger-1">
+      <div class="toolbar-info">
+        <h3 class="toolbar-title">消融实验</h3>
+        <span class="toolbar-count" v-if="experiments.length > 0">共 {{ experiments.length }} 个实验</span>
+      </div>
+      <el-button type="primary" size="large" @click="openCreateDialog">
+        <el-icon><Plus /></el-icon> 新建实验
+      </el-button>
+    </div>
 
-      <!-- 实验列表 -->
-      <el-table :data="experiments" v-loading="loading" border stripe>
-        <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column prop="experimentName" label="实验名称" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="testSetName" label="评测集" width="150" />
-        <el-table-column label="进度" width="140">
+    <!-- 实验列表 -->
+    <div class="table-card stagger-2">
+      <el-table :data="experiments" v-loading="loading" stripe>
+        <el-table-column prop="id" label="ID" width="70" align="center" />
+        <el-table-column label="实验名称" min-width="220">
           <template #default="{ row }">
-            <el-progress
-              :percentage="row.totalTasks > 0 ? Math.round(row.completedTasks / row.totalTasks * 100) : 0"
-              :status="row.status === 'COMPLETED' ? 'success' : row.status === 'FAILED' ? 'exception' : ''"
-              :stroke-width="14"
-            />
+            <div class="exp-name-cell">
+              <el-icon :size="16" color="#6366f1"><Connection /></el-icon>
+              <span class="exp-name">{{ row.experimentName }}</span>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column label="实验组" width="100" align="center">
-          <template #default="{ row }">{{ row.completedTasks }} / {{ row.totalTasks }}</template>
-        </el-table-column>
-        <el-table-column label="状态" width="90">
+        <el-table-column prop="testSetName" label="评测集" width="160" />
+        <el-table-column label="进度" width="160">
           <template #default="{ row }">
-            <el-tag :type="statusTag(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
+            <div class="progress-cell">
+              <el-progress
+                :percentage="row.totalTasks > 0 ? Math.round(row.completedTasks / row.totalTasks * 100) : 0"
+                :status="row.status === 'COMPLETED' ? 'success' : row.status === 'FAILED' ? 'exception' : ''"
+                :stroke-width="10"
+                :show-text="false"
+              />
+              <span class="progress-text text-mono">
+                {{ row.completedTasks }}<span style="color:#94a3b8">/</span>{{ row.totalTasks }}
+              </span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag :type="statusTag(row.status)" size="small" effect="light">
+              {{ statusLabel(row.status) }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="170" />
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button size="small" type="primary" @click="viewDetail(row.id)">对比报告</el-button>
+            <el-button size="small" type="primary" link @click="viewDetail(row.id)">
+              <el-icon><TrendCharts /></el-icon> 对比报告
+            </el-button>
             <el-button
               v-if="row.status === 'PENDING'"
-              size="small" type="success"
+              size="small" type="success" link
               @click="handleRun(row.id)"
-            >运行</el-button>
-            <el-popconfirm title="确认删除？" @confirm="handleDelete(row.id)">
+            >
+              <el-icon><VideoPlay /></el-icon> 运行
+            </el-button>
+            <el-popconfirm title="确认删除实验？" @confirm="handleDelete(row.id)">
               <template #reference>
-                <el-button size="small" type="danger">删除</el-button>
+                <el-button size="small" type="danger" link>
+                  <el-icon><Delete /></el-icon> 删除
+                </el-button>
               </template>
             </el-popconfirm>
           </template>
@@ -51,14 +71,14 @@
       </el-table>
 
       <el-empty v-if="!loading && experiments.length === 0"
-        description="暂无消融实验，请创建实验自动对比不同RAG参数的效果" />
-    </el-card>
+        description="暂无消融实验，请创建实验自动对比不同 RAG 参数组合的效果" />
+    </div>
 
-    <!-- ========== 创建实验对话框 ========== -->
-    <el-dialog v-model="showCreate" title="新建消融实验" width="650px" top="5vh">
+    <!-- ======== 创建实验对话框 ======== -->
+    <el-dialog v-model="showCreate" title="新建消融实验" width="680px" top="5vh">
       <el-form :model="createForm" label-width="100px">
         <el-form-item label="实验名称" required>
-          <el-input v-model="createForm.name" placeholder="如：分块大小与TopK消融实验" />
+          <el-input v-model="createForm.name" placeholder="如：分块大小与 TopK 消融实验" size="large" />
         </el-form-item>
         <el-form-item label="评测集" required>
           <el-select v-model="createForm.testSetName" placeholder="选择评测集" style="width: 100%">
@@ -66,7 +86,9 @@
           </el-select>
         </el-form-item>
 
-        <el-divider content-position="left">基准配置</el-divider>
+        <el-divider content-position="left">
+          <span class="divider-label">基准配置</span>
+        </el-divider>
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="提示词模板">
@@ -78,104 +100,115 @@
           </el-col>
           <el-col :span="6">
             <el-form-item label="分块大小">
-              <el-input-number v-model="createForm.baseConfig.chunkSize" :min="128" :max="4096" :step="128" />
+              <el-input-number v-model="createForm.baseConfig.chunkSize" :min="128" :max="4096" :step="128" style="width:100%" />
             </el-form-item>
           </el-col>
           <el-col :span="6">
             <el-form-item label="TopK">
-              <el-input-number v-model="createForm.baseConfig.topK" :min="1" :max="20" />
+              <el-input-number v-model="createForm.baseConfig.topK" :min="1" :max="20" style="width:100%" />
             </el-form-item>
           </el-col>
         </el-row>
 
         <el-divider content-position="left">
-          变量配置
-          <el-tooltip content="每个变量的所有取值将做笛卡尔积组合，组合数 = 各变量取值数的乘积。组合数不能超过50。">
-            <el-icon style="margin-left: 4px; cursor: help"><QuestionFilled /></el-icon>
-          </el-tooltip>
+          <span class="divider-label">
+            变量配置
+            <el-tooltip content="各变量取值做笛卡尔积组合，组合数不能超过 50。">
+              <el-icon style="margin-left:4px;cursor:help;color:#94a3b8"><QuestionFilled /></el-icon>
+            </el-tooltip>
+          </span>
         </el-divider>
 
-        <div v-for="(v, idx) in createForm.variables" :key="idx" class="variable-row">
-          <el-input v-model="v.name" placeholder="变量名" style="width: 130px" />
-          <el-input v-model="v.valuesStr" placeholder="取值，逗号分隔（如 256,512,1024）" style="flex: 1; margin: 0 8px" />
-          <el-button :icon="Delete" circle size="small" @click="removeVariable(idx)"
-            :disabled="createForm.variables.length <= 1" />
+        <div class="variables-section">
+          <div v-for="(v, idx) in createForm.variables" :key="idx" class="variable-row">
+            <span class="var-index text-mono">V{{ idx + 1 }}</span>
+            <el-input v-model="v.name" placeholder="变量名（如 chunkSize）" style="width: 160px" size="small" />
+            <el-input v-model="v.valuesStr" placeholder="取值，逗号分隔（如 256,512,1024）" style="flex: 1" size="small" />
+            <el-button :icon="Delete" circle size="small" @click="removeVariable(idx)"
+              :disabled="createForm.variables.length <= 1" />
+          </div>
+          <el-button type="primary" text @click="addVariable">
+            <el-icon><Plus /></el-icon> 添加变量
+          </el-button>
         </div>
-        <el-button type="primary" text @click="addVariable" style="margin-top: 8px">
-          <el-icon><Plus /></el-icon> 添加变量
-        </el-button>
 
         <el-alert type="info" :closable="false" show-icon style="margin-top: 12px">
-          <template #title>
-            实验将自动对每个参数组合运行完整评测流程（检索→生成→LLM评分），完成后生成对比报告
-          </template>
+          <template #title>实验将对每个参数组合运行完整评测流程，完成后生成对比报告</template>
         </el-alert>
       </el-form>
       <template #footer>
         <el-button @click="showCreate = false">取消</el-button>
-        <el-button type="primary" @click="handleCreate" :loading="creating"
-          :disabled="!canCreate">创建实验</el-button>
+        <el-button type="primary" @click="handleCreate" :loading="creating" :disabled="!canCreate">
+          创建实验
+        </el-button>
       </template>
     </el-dialog>
 
-    <!-- ========== 对比报告对话框 ========== -->
-    <el-dialog v-model="showReport" title="消融实验对比报告" width="950px" top="3vh">
+    <!-- ======== 对比报告对话框 ======== -->
+    <el-dialog v-model="showReport" title="消融实验对比报告" width="980px" top="3vh">
       <template v-if="reportData && reportData.groups">
-        <!-- 最优指标卡片 -->
-        <el-row :gutter="12" style="margin-bottom: 16px">
-          <el-col :span="4" v-for="b in bestCards" :key="b.label">
-            <el-card shadow="hover" class="best-card">
-              <div class="best-label">{{ b.label }}</div>
-              <div class="best-value" :style="{ color: b.color }">{{ b.value }}</div>
-            </el-card>
-          </el-col>
-        </el-row>
+        <div class="metrics-row">
+          <div class="metric-card" v-for="b in bestCards" :key="b.label">
+            <span class="metric-value text-mono" :style="{ color: b.color }">{{ b.value }}</span>
+            <span class="metric-label">{{ b.label }}</span>
+          </div>
+        </div>
 
-        <!-- 实验组对比表格 -->
-        <el-table :data="reportData.groups" border stripe max-height="450">
-          <el-table-column prop="label" label="实验组" min-width="200" />
+        <el-table :data="reportData.groups" border stripe max-height="460">
+          <el-table-column prop="label" label="实验组" min-width="200">
+            <template #default="{ row }">
+              <span class="text-mono" style="font-size:12px;font-weight:500">{{ row.label }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="完成/总数" width="100" align="center">
-            <template #default="{ row }">{{ row.completed }} / {{ row.total }}</template>
+            <template #default="{ row }">
+              <span class="text-mono" style="font-size:12px">{{ row.completed }}<span style="color:#94a3b8">/</span>{{ row.total }}</span>
+            </template>
           </el-table-column>
           <el-table-column label="相关性 ↑" width="90" align="center">
             <template #default="{ row }">
-              <span :style="{ color: scoreColor(row.avgAnswerRelevance, 5), fontWeight: bestFor('bestRelevance', row.label) ? '700' : '' }">
+              <span class="text-mono"
+                :style="{ color: scoreColor(row.avgAnswerRelevance, 5), fontWeight: bestFor('bestRelevance', row.label) ? '700' : '400' }">
                 {{ row.avgAnswerRelevance }}
               </span>
             </template>
           </el-table-column>
           <el-table-column label="忠实度 ↑" width="90" align="center">
             <template #default="{ row }">
-              <span :style="{ color: scoreColor(row.avgContextFaithfulness, 5), fontWeight: bestFor('bestFaithfulness', row.label) ? '700' : '' }">
+              <span class="text-mono"
+                :style="{ color: scoreColor(row.avgContextFaithfulness, 5), fontWeight: bestFor('bestFaithfulness', row.label) ? '700' : '400' }">
                 {{ row.avgContextFaithfulness }}
               </span>
             </template>
           </el-table-column>
           <el-table-column label="幻觉分 ↓" width="90" align="center">
             <template #default="{ row }">
-              <span :style="{ color: hallucinationColor(row.avgHallucinationScore), fontWeight: bestFor('bestHallucination', row.label) ? '700' : '' }">
+              <span class="text-mono"
+                :style="{ color: hallucinationColor(row.avgHallucinationScore), fontWeight: bestFor('bestHallucination', row.label) ? '700' : '400' }">
                 {{ row.avgHallucinationScore }}
               </span>
             </template>
           </el-table-column>
           <el-table-column label="召回率 ↑" width="90" align="center">
             <template #default="{ row }">
-              <span :style="{ color: scoreColor(row.avgContextRecall, 1), fontWeight: bestFor('bestRecall', row.label) ? '700' : '' }">
+              <span class="text-mono"
+                :style="{ color: scoreColor(row.avgContextRecall, 1), fontWeight: bestFor('bestRecall', row.label) ? '700' : '400' }">
                 {{ row.avgContextRecall }}
               </span>
             </template>
           </el-table-column>
           <el-table-column label="精准度 ↑" width="90" align="center">
             <template #default="{ row }">
-              <span :style="{ color: scoreColor(row.avgRetrievalPrecision, 1), fontWeight: bestFor('bestPrecision', row.label) ? '700' : '' }">
+              <span class="text-mono"
+                :style="{ color: scoreColor(row.avgRetrievalPrecision, 1), fontWeight: bestFor('bestPrecision', row.label) ? '700' : '400' }">
                 {{ row.avgRetrievalPrecision }}
               </span>
             </template>
           </el-table-column>
         </el-table>
 
-        <div style="margin-top: 8px; font-size: 12px; color: #909399;">
-          注：粗体表示该指标的最优组。↑ 越高越好，↓ 越低越好。
+        <div style="margin-top: 8px; font-size: 12px; color: #94a3b8">
+          粗体 = 该指标最优组 · ↑ 越高越好 · ↓ 越低越好
         </div>
       </template>
       <el-empty v-else-if="reportData" description="实验尚未产生对比数据" />
@@ -186,18 +219,14 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Plus, Delete, QuestionFilled } from '@element-plus/icons-vue'
-import {
-  createExperiment, listExperiments, getExperiment, runExperiment, deleteExperiment
-} from '../../api/ablation'
+import { Plus, Delete, QuestionFilled, Connection, TrendCharts, VideoPlay } from '@element-plus/icons-vue'
+import { createExperiment, listExperiments, getExperiment, runExperiment, deleteExperiment } from '../../api/ablation'
 import { listTestSets } from '../../api/evaluation'
 import { pagePromptTemplates } from '../../api/promptTemplate'
 
-// ---- 实验列表 ----
 const loading = ref(false)
 const experiments = ref([])
 
-// ---- 创建对话框 ----
 const showCreate = ref(false)
 const creating = ref(false)
 const testSetNames = ref([])
@@ -214,7 +243,6 @@ const canCreate = computed(() =>
   createForm.name && createForm.testSetName && createForm.baseConfig.promptTemplateId
 )
 
-// ---- 报告对话框 ----
 const showReport = ref(false)
 const reportData = ref(null)
 
@@ -240,7 +268,6 @@ async function loadPromptTemplates() {
   } catch { promptTemplates.value = [] }
 }
 
-// ---- 变量管理 ----
 function addVariable() {
   createForm.variables.push({ name: '', valuesStr: '' })
 }
@@ -250,7 +277,6 @@ function removeVariable(idx) {
 }
 
 function openCreateDialog() {
-  // 重置表单
   createForm.name = ''
   createForm.testSetName = ''
   createForm.baseConfig = { promptTemplateId: null, chunkSize: 512, topK: 5 }
@@ -258,7 +284,6 @@ function openCreateDialog() {
   showCreate.value = true
 }
 
-// ---- 创建实验 ----
 async function handleCreate() {
   if (!canCreate.value) return
   creating.value = true
@@ -269,18 +294,11 @@ async function handleCreate() {
         variable: v.name.trim(),
         values: v.valuesStr.split(',').map(s => {
           const trimmed = s.trim()
-          // 尝试解析为数字
           const num = Number(trimmed)
           return isNaN(num) ? trimmed : num
         })
       }))
-
-    await createExperiment(
-      createForm.name,
-      createForm.testSetName,
-      createForm.baseConfig,
-      variableConfigs
-    )
+    await createExperiment(createForm.name, createForm.testSetName, createForm.baseConfig, variableConfigs)
     ElMessage.success('实验创建成功')
     showCreate.value = false
     await loadExperiments()
@@ -291,41 +309,30 @@ async function handleCreate() {
   }
 }
 
-// ---- 运行/删除 ----
 async function handleRun(id) {
-  try {
-    await runExperiment(id)
-    ElMessage.success('实验已启动，后台运行中...')
-    await loadExperiments()
-  } catch { ElMessage.error('启动失败') }
+  try { await runExperiment(id); ElMessage.success('实验已启动'); await loadExperiments() }
+  catch { ElMessage.error('启动失败') }
 }
 
 async function handleDelete(id) {
-  try {
-    await deleteExperiment(id)
-    ElMessage.success('删除成功')
-    await loadExperiments()
-  } catch { ElMessage.error('删除失败') }
+  try { await deleteExperiment(id); ElMessage.success('删除成功'); await loadExperiments() }
+  catch { ElMessage.error('删除失败') }
 }
 
-// ---- 查看报告 ----
 async function viewDetail(id) {
-  try {
-    reportData.value = await getExperiment(id)
-    showReport.value = true
-  } catch { ElMessage.error('获取报告失败') }
+  try { reportData.value = await getExperiment(id); showReport.value = true }
+  catch { ElMessage.error('获取报告失败') }
 }
 
-// ---- 最佳指标卡片 ----
 const bestCards = computed(() => {
   if (!reportData.value) return []
   return [
-    { label: '实验组数', value: reportData.value.totalGroups || 0, color: '#409eff' },
-    { label: '最佳相关性', value: reportData.value.bestRelevance || '-', color: '#67c23a' },
-    { label: '最佳忠实度', value: reportData.value.bestFaithfulness || '-', color: '#e6a23c' },
-    { label: '最低幻觉', value: reportData.value.bestHallucination || '-', color: '#f56c6c' },
-    { label: '最佳召回', value: reportData.value.bestRecall || '-', color: '#409eff' },
-    { label: '最佳精准', value: reportData.value.bestPrecision || '-', color: '#909399' }
+    { label: '实验组数', value: reportData.value.totalGroups || 0, color: '#6366f1' },
+    { label: '最佳相关性', value: reportData.value.bestRelevance || '-', color: '#10b981' },
+    { label: '最佳忠实度', value: reportData.value.bestFaithfulness || '-', color: '#f59e0b' },
+    { label: '最低幻觉', value: reportData.value.bestHallucination || '-', color: '#ef4444' },
+    { label: '最佳召回', value: reportData.value.bestRecall || '-', color: '#3b82f6' },
+    { label: '最佳精准', value: reportData.value.bestPrecision || '-', color: '#8b5cf6' }
   ]
 })
 
@@ -333,20 +340,19 @@ function bestFor(key, label) {
   return reportData.value && reportData.value[key] === label
 }
 
-// ---- 着色 ----
 function scoreColor(val, max) {
-  if (val == null) return '#909399'
+  if (val == null) return '#94a3b8'
   const ratio = val / max
-  if (ratio >= 0.7) return '#67c23a'
-  if (ratio >= 0.4) return '#e6a23c'
-  return '#f56c6c'
+  if (ratio >= 0.7) return '#10b981'
+  if (ratio >= 0.4) return '#f59e0b'
+  return '#ef4444'
 }
 
 function hallucinationColor(val) {
-  if (val == null) return '#909399'
-  if (val <= 2) return '#67c23a'
-  if (val <= 3) return '#e6a23c'
-  return '#f56c6c'
+  if (val == null) return '#94a3b8'
+  if (val <= 2) return '#10b981'
+  if (val <= 3) return '#f59e0b'
+  return '#ef4444'
 }
 
 function statusTag(s) {
@@ -359,29 +365,110 @@ function statusLabel(s) {
 </script>
 
 <style scoped>
-.card-header {
+.ablation-page {
+  animation: fadeIn 0.4s ease;
+  max-width: 1300px;
+}
+
+.page-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 16px;
 }
+
+.toolbar-title { font-size: 17px; font-weight: 700; }
+
+.toolbar-count {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  margin-left: 10px;
+}
+
+.table-card {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+}
+
+.table-card :deep(.el-table) { border-radius: var(--radius-lg); overflow: hidden; }
+.table-card :deep(.el-table__inner-wrapper::before) { display: none; }
+
+.exp-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exp-name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.progress-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.progress-text {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.divider-label {
+  font-weight: 600;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+}
+
+.variables-section {
+  margin-bottom: 8px;
+}
+
 .variable-row {
   display: flex;
   align-items: center;
+  gap: 8px;
   margin-bottom: 8px;
 }
-.best-card {
+
+.var-index {
+  font-size: 11px;
+  color: var(--color-primary);
+  font-weight: 600;
+  width: 24px;
+  flex-shrink: 0;
+}
+
+/* 指标行 */
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.metric-card {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 8px;
   text-align: center;
 }
-.best-value {
+
+.metric-value {
   font-size: 20px;
   font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: block;
 }
-.best-label {
-  font-size: 12px;
-  color: #909399;
-  margin-bottom: 4px;
+
+.metric-label {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  margin-top: 2px;
+  display: block;
 }
 </style>
