@@ -41,7 +41,7 @@ const routes = [
         path: 'chat',
         name: 'ChatView',
         component: () => import('../views/chat/ChatView.vue'),
-        meta: { title: 'AI问答对话' }
+        meta: { title: 'AI问答对话', layout: 'workspace' }
       },
       {
         path: 'evaluation',

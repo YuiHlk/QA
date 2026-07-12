@@ -1,89 +1,75 @@
 <template>
-  <div class="layout-root">
-    <!-- 侧边栏 -->
-    <aside class="sidebar">
-      <!-- Logo -->
+  <div class="layout-root" :class="{ 'is-collapsed': isSidebarCollapsed }">
+    <aside class="sidebar" aria-label="主导航">
       <div class="sidebar-brand">
-        <div class="brand-icon">
-          <svg viewBox="0 0 32 32" fill="none" width="28" height="28">
-            <rect width="32" height="32" rx="8" fill="url(#brandGrad)" />
-            <path d="M10 20V12l6 4-6 4z" fill="#fff" />
-            <path d="M16 20V12l6 4-6 4z" fill="rgba(255,255,255,0.7)" />
-            <defs>
-              <linearGradient id="brandGrad" x1="0" y1="0" x2="32" y2="32">
-                <stop stop-color="#6366f1" />
-                <stop offset="1" stop-color="#8b5cf6" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
+        <div class="brand-mark" aria-hidden="true"><span>Q</span><i /></div>
         <div class="brand-text">
-          <span class="brand-name">AI 知识库</span>
-          <span class="brand-sub">Enterprise RAG Platform</span>
+          <span class="brand-name">知识工作台</span>
+          <span class="brand-sub">Signal Desk / RAG</span>
         </div>
+        <button class="collapse-button" type="button" :aria-label="isSidebarCollapsed ? '展开侧栏' : '折叠侧栏'" @click="toggleSidebar">
+          <el-icon :size="16"><Expand v-if="isSidebarCollapsed" /><Fold v-else /></el-icon>
+        </button>
       </div>
 
-      <!-- 导航菜单 -->
+      <div class="nav-kicker">WORKSPACE / 01</div>
       <nav class="sidebar-nav">
-        <router-link
-          v-for="item in navItems"
-          :key="item.path"
-          :to="item.path"
-          class="nav-item"
-          :class="{ active: isActive(item.path) }"
-        >
-          <span class="nav-icon">
-            <el-icon :size="18"><component :is="item.icon" /></el-icon>
-          </span>
-          <span class="nav-label">{{ item.label }}</span>
-          <span v-if="isActive(item.path)" class="nav-indicator" />
-        </router-link>
+        <el-tooltip v-for="item in navItems" :key="item.path" :content="item.label" placement="right" :disabled="!isSidebarCollapsed">
+          <router-link :to="item.path" class="nav-item" :class="{ active: isActive(item.path) }">
+            <span class="nav-icon"><el-icon :size="18"><component :is="item.icon" /></el-icon></span>
+            <span class="nav-label">{{ item.label }}</span>
+            <span v-if="isActive(item.path)" class="nav-indicator" />
+          </router-link>
+        </el-tooltip>
       </nav>
 
-      <!-- 底部信息 -->
       <div class="sidebar-footer">
-        <div class="footer-status">
-          <span class="status-dot" />
-          <span class="status-text">System Online</span>
-        </div>
+        <span class="status-dot" />
+        <div class="footer-copy"><strong>Workspace ready</strong><span>本地知识工程环境</span></div>
       </div>
     </aside>
 
-    <!-- 主内容区 -->
+    <transition name="drawer-fade">
+      <button v-if="isDrawerOpen" class="drawer-backdrop" type="button" aria-label="关闭导航" @click="closeDrawer" />
+    </transition>
+    <aside class="mobile-drawer" :class="{ open: isDrawerOpen }" aria-label="移动端主导航">
+      <div class="mobile-brand">
+        <div class="brand-mark" aria-hidden="true"><span>Q</span><i /></div>
+        <div class="brand-text"><span class="brand-name">知识工作台</span><span class="brand-sub">Signal Desk / RAG</span></div>
+        <button type="button" class="icon-button" aria-label="关闭导航" @click="closeDrawer"><el-icon><Close /></el-icon></button>
+      </div>
+      <nav class="mobile-nav">
+        <router-link v-for="item in navItems" :key="item.path" :to="item.path" class="nav-item" :class="{ active: isActive(item.path) }" @click="closeDrawer">
+          <span class="nav-icon"><el-icon :size="18"><component :is="item.icon" /></el-icon></span>
+          <span class="nav-label">{{ item.label }}</span><span v-if="isActive(item.path)" class="nav-indicator" />
+        </router-link>
+      </nav>
+    </aside>
+
     <div class="main-area">
-      <!-- 顶栏 -->
       <header class="topbar">
         <div class="topbar-left">
-          <h1 class="page-title">{{ currentTitle }}</h1>
-          <span class="page-breadcrumb">{{ currentSubtitle }}</span>
+          <button ref="menuButton" class="menu-button" type="button" aria-label="打开导航" :aria-expanded="isDrawerOpen" @click="isDrawerOpen = true">
+            <el-icon :size="19"><Menu /></el-icon>
+          </button>
+          <div class="page-heading"><span class="page-index">{{ currentIndex }}</span><div><h1 class="page-title">{{ currentTitle }}</h1><span class="page-breadcrumb">{{ currentSubtitle }}</span></div></div>
         </div>
-        <div class="topbar-right">
-          <span class="topbar-clock">{{ currentTime }}</span>
-        </div>
+        <div class="topbar-right"><span class="clock-label">LOCAL</span><span class="topbar-clock">{{ currentTime }}</span></div>
       </header>
 
-      <!-- 页面内容 -->
-      <main class="main-content">
-        <router-view v-slot="{ Component }">
-          <transition name="page-fade" mode="out-in">
-            <component :is="Component" />
-          </transition>
-        </router-view>
+      <main class="main-content" :class="{ 'workspace-content': route.meta.layout === 'workspace' }">
+        <router-view v-slot="{ Component }"><transition name="page-fade" mode="out-in"><component :is="Component" /></transition></router-view>
       </main>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import {
-  Monitor, Document, FolderOpened, ChatDotSquare,
-  DataAnalysis, Connection, Cpu
-} from '@element-plus/icons-vue'
+import { Monitor, Document, FolderOpened, ChatDotSquare, DataAnalysis, Connection, Cpu, Fold, Expand, Menu, Close } from '@element-plus/icons-vue'
 
 const route = useRoute()
-
 const navItems = [
   { path: '/dashboard', label: '首页概览', icon: Monitor },
   { path: '/prompts', label: '提示词管理', icon: Document },
@@ -93,286 +79,105 @@ const navItems = [
   { path: '/ablation', label: '消融实验', icon: Connection },
   { path: '/train', label: '模型微调', icon: Cpu }
 ]
-
 const subtitles = {
-  '/dashboard': '平台运行状态与核心功能概览',
-  '/prompts': '提示词模板版本管理与 A/B 测试',
-  '/prompts/create': '创建新的提示词模板',
-  '/knowledge': '文档解析、分块与向量化处理',
-  '/chat': '基于 RAG 的检索增强生成问答',
-  '/evaluation': 'LLM-as-Judge 自动化评测系统',
-  '/ablation': '多维度参数消融对比实验',
-  '/train': 'QLoRA 高效模型微调服务'
+  '/dashboard': '知识检索、评测与模型迭代总览', '/prompts': '提示词模板版本管理与 A/B 测试', '/prompts/create': '创建新的提示词模板',
+  '/knowledge': '文档解析、分块与向量化处理', '/chat': '基于 RAG 的检索增强生成问答', '/evaluation': 'LLM-as-Judge 自动化评测系统',
+  '/ablation': '多维度参数消融对比实验', '/train': 'QLoRA 高效模型微调服务'
 }
-
-const activeMenu = computed(() => route.path)
 const currentTitle = computed(() => route.meta.title || '首页')
-const currentSubtitle = computed(() => {
-  const exact = subtitles[route.path]
-  if (exact) return exact
-  if (route.path.includes('/prompts/')) return '提示词模板编辑'
-  return ''
-})
-
-function isActive(path) {
-  if (path === '/dashboard') return route.path === '/dashboard'
-  return route.path.startsWith(path)
-}
-
-// 实时时钟
+const currentSubtitle = computed(() => subtitles[route.path] || (route.path.includes('/prompts/') ? '提示词模板编辑' : ''))
+const currentIndex = computed(() => String(Math.max(1, navItems.findIndex(item => isActive(item.path)) + 1)).padStart(2, '0'))
+const isSidebarCollapsed = ref(false)
+const isDrawerOpen = ref(false)
+const menuButton = ref(null)
 const currentTime = ref('')
-let timer = null
+let timer
+let mobileQuery
+let compactQuery
 
-function updateTime() {
-  const now = new Date()
-  const h = String(now.getHours()).padStart(2, '0')
-  const m = String(now.getMinutes()).padStart(2, '0')
-  currentTime.value = `${h}:${m}`
-}
+function isActive(path) { return path === '/dashboard' ? route.path === path : route.path.startsWith(path) }
+function toggleSidebar() { isSidebarCollapsed.value = !isSidebarCollapsed.value; localStorage.setItem('qa_sidebar_collapsed', String(isSidebarCollapsed.value)) }
+function closeDrawer(restoreFocus = false) { isDrawerOpen.value = false; if (restoreFocus) nextTick(() => menuButton.value?.focus()) }
+function updateTime() { currentTime.value = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }) }
+function syncViewport() { if (mobileQuery.matches) isDrawerOpen.value = false; else { const stored = localStorage.getItem('qa_sidebar_collapsed'); isSidebarCollapsed.value = stored === null ? compactQuery.matches : stored === 'true' } }
+function handleKeydown(event) { if (event.key === 'Escape' && isDrawerOpen.value) closeDrawer(true) }
 
+watch(() => route.path, () => closeDrawer())
 onMounted(() => {
-  updateTime()
-  timer = setInterval(updateTime, 30000)
+  mobileQuery = window.matchMedia('(max-width: 767px)')
+  compactQuery = window.matchMedia('(min-width: 768px) and (max-width: 1279px)')
+  syncViewport(); mobileQuery.addEventListener('change', syncViewport); compactQuery.addEventListener('change', syncViewport)
+  document.addEventListener('keydown', handleKeydown); updateTime(); timer = setInterval(updateTime, 30000)
 })
-
 onUnmounted(() => {
-  if (timer) clearInterval(timer)
+  clearInterval(timer); mobileQuery?.removeEventListener('change', syncViewport); compactQuery?.removeEventListener('change', syncViewport); document.removeEventListener('keydown', handleKeydown)
 })
 </script>
 
 <style scoped>
-.layout-root {
-  display: flex;
-  height: 100vh;
-  overflow: hidden;
-}
+.layout-root { display: flex; height: 100vh; height: 100dvh; overflow: hidden; }
+.sidebar { width: var(--sidebar-width-expanded); background: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; flex-shrink: 0; border-right: 1px solid var(--sidebar-border); transition: width var(--transition-base); overflow: hidden; z-index: 10; }
+.is-collapsed .sidebar { width: var(--sidebar-width-collapsed); }
+.sidebar-brand, .mobile-brand { min-height: var(--header-height); display: flex; align-items: center; gap: 11px; padding: 0 15px; border-bottom: 1px solid var(--sidebar-border); }
+.brand-mark { width: 34px; height: 34px; flex: 0 0 34px; border: 1px solid rgba(133, 236, 203, .42); display: grid; place-items: center; position: relative; color: var(--color-primary-light); font: 700 15px var(--font-mono); }
+.brand-mark i { position: absolute; width: 7px; height: 7px; right: -1px; bottom: -1px; background: var(--color-primary); border: 2px solid var(--sidebar-bg-solid); }
+.brand-text { min-width: 0; display: flex; flex: 1; flex-direction: column; white-space: nowrap; transition: opacity var(--transition-fast); }
+.brand-name { color: #f5f4ed; font-size: 14px; font-weight: 700; letter-spacing: .04em; }
+.brand-sub, .nav-kicker { font: 500 9px var(--font-mono); color: #7e918b; letter-spacing: .11em; text-transform: uppercase; }
+.collapse-button, .icon-button, .menu-button { border: 0; background: transparent; color: inherit; cursor: pointer; display: grid; place-items: center; }
+.collapse-button { width: 28px; height: 28px; color: #9eb0aa; }
+.is-collapsed .brand-text, .is-collapsed .collapse-button { opacity: 0; visibility: hidden; width: 0; }
+.is-collapsed .sidebar-brand { padding-inline: 18px; }
+.nav-kicker { padding: 20px 20px 8px; white-space: nowrap; }
+.is-collapsed .nav-kicker { opacity: 0; }
+.sidebar-nav, .mobile-nav { flex: 1; overflow-y: auto; padding: 5px 9px 12px; }
+.nav-item { height: 44px; display: flex; align-items: center; gap: 11px; padding: 0 12px; margin: 2px 0; position: relative; color: var(--sidebar-text); text-decoration: none; font-size: 13px; font-weight: 550; white-space: nowrap; transition: color var(--transition-fast), background-color var(--transition-fast); }
+.nav-item:hover, .nav-item:focus-visible { color: #f4f6f2; background: var(--sidebar-item-hover); }
+.nav-item.active { color: #fff; background: var(--sidebar-item-active); }
+.nav-icon { width: 22px; flex: 0 0 22px; display: grid; place-items: center; }
+.nav-label { overflow: hidden; text-overflow: ellipsis; }
+.is-collapsed .nav-item { justify-content: center; padding-inline: 0; }
+.is-collapsed .nav-label { width: 0; opacity: 0; }
+.nav-indicator { position: absolute; left: 0; width: 3px; height: 22px; background: var(--color-primary); }
+.sidebar-footer { min-height: 62px; padding: 12px 18px; border-top: 1px solid var(--sidebar-border); display: flex; align-items: center; gap: 9px; white-space: nowrap; }
+.status-dot { width: 7px; height: 7px; background: var(--color-primary); flex: 0 0 7px; }
+.footer-copy { display: flex; flex-direction: column; color: #91a39d; font-size: 10px; }
+.footer-copy strong { color: #dce5e1; font: 500 10px var(--font-mono); text-transform: uppercase; letter-spacing: .05em; }
+.is-collapsed .footer-copy { display: none; }
+.main-area { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--color-bg-page); }
+.topbar { height: var(--header-height); flex: 0 0 var(--header-height); display: flex; align-items: center; justify-content: space-between; padding: 0 28px; background: rgba(252, 251, 247, .92); border-bottom: 1px solid var(--color-border); }
+.topbar-left, .page-heading, .topbar-right { display: flex; align-items: center; }
+.page-heading { gap: 12px; }
+.page-index { font: 600 11px var(--font-mono); color: var(--color-primary-dark); border-right: 1px solid var(--color-border); padding-right: 12px; }
+.page-title { font-size: 15px; line-height: 1.25; color: var(--color-text-primary); letter-spacing: .02em; }
+.page-breadcrumb { display: block; margin-top: 2px; font-size: 11px; color: var(--color-text-tertiary); }
+.topbar-right { gap: 7px; font-family: var(--font-mono); }
+.clock-label { font-size: 9px; color: var(--color-text-tertiary); letter-spacing: .12em; }
+.topbar-clock { font-size: 12px; color: var(--color-text-secondary); }
+.menu-button { display: none; width: 36px; height: 36px; margin-right: 8px; color: var(--color-text-primary); }
+.main-content { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: var(--content-padding-y) var(--content-padding-x); }
+.main-content.workspace-content { overflow: hidden; display: flex; }
+.main-content.workspace-content > :deep(*) { flex: 1; min-height: 0; }
+.page-fade-enter-active, .page-fade-leave-active { transition: opacity var(--transition-base), transform var(--transition-base); }
+.page-fade-enter-from { opacity: 0; transform: translateY(5px); }
+.page-fade-leave-to { opacity: 0; transform: translateY(-3px); }
+.mobile-drawer, .drawer-backdrop { display: none; }
 
-/* ========== 侧边栏 ========== */
-.sidebar {
-  width: var(--sidebar-width);
-  background: var(--sidebar-bg);
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 10;
+@media (max-width: 767px) {
+  .sidebar { display: none; }
+  .topbar { height: var(--header-height-mobile); flex-basis: var(--header-height-mobile); padding: 0 14px; }
+  .menu-button { display: grid; }
+  .page-breadcrumb, .clock-label { display: none; }
+  .main-content { padding: 14px; }
+  .main-content.workspace-content { padding: 10px; }
+  .drawer-backdrop { display: block; position: fixed; inset: 0; border: 0; background: rgba(15, 24, 22, .56); z-index: 49; }
+  .mobile-drawer { display: flex; position: fixed; inset: 0 auto 0 0; width: min(84vw, 320px); background: var(--sidebar-bg); color: var(--sidebar-text); z-index: 50; flex-direction: column; transform: translateX(-101%); transition: transform var(--transition-base); padding-bottom: env(safe-area-inset-bottom); }
+  .mobile-drawer.open { transform: translateX(0); }
+  .mobile-brand { min-height: 64px; }
+  .icon-button { width: 34px; height: 34px; }
+  .mobile-nav { padding-top: 14px; }
+  .drawer-fade-enter-active, .drawer-fade-leave-active { transition: opacity var(--transition-fast); }
+  .drawer-fade-enter-from, .drawer-fade-leave-to { opacity: 0; }
 }
-
-.sidebar::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 1px;
-  background: var(--sidebar-border);
-}
-
-/* Brand */
-.sidebar-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 20px 16px;
-  border-bottom: 1px solid var(--sidebar-border);
-}
-
-.brand-icon {
-  flex-shrink: 0;
-}
-
-.brand-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.brand-name {
-  font-size: 15px;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-}
-
-.brand-sub {
-  font-size: 10px;
-  color: var(--sidebar-text);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-/* Navigation */
-.sidebar-nav {
-  flex: 1;
-  padding: 12px 0;
-  overflow-y: auto;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 16px;
-  height: 42px;
-  margin: 2px 8px;
-  border-radius: var(--radius-md);
-  color: var(--sidebar-text);
-  text-decoration: none;
-  font-size: 13.5px;
-  font-weight: 500;
-  position: relative;
-  transition: all var(--transition-fast);
-  cursor: pointer;
-}
-
-.nav-item:hover {
-  background: var(--sidebar-item-hover);
-  color: #e2e8f0;
-}
-
-.nav-item.active {
-  background: var(--sidebar-item-active);
-  color: #fff;
-  font-weight: 600;
-}
-
-.nav-icon {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  opacity: 0.8;
-}
-
-.nav-item.active .nav-icon {
-  opacity: 1;
-}
-
-.nav-label {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.nav-indicator {
-  position: absolute;
-  left: -8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 20px;
-  background: var(--color-primary);
-  border-radius: 0 3px 3px 0;
-}
-
-/* Footer */
-.sidebar-footer {
-  padding: 12px 16px;
-  border-top: 1px solid var(--sidebar-border);
-}
-
-.footer-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--color-success);
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
-  animation: pulse-glow 2s infinite;
-}
-
-.status-text {
-  font-size: 11px;
-  color: var(--sidebar-text);
-  letter-spacing: 0.03em;
-}
-
-/* ========== 主区域 ========== */
-.main-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  background: var(--color-bg-page);
-}
-
-/* 顶栏 */
-.topbar {
-  height: var(--header-height);
-  background: var(--color-bg-surface);
-  border-bottom: 1px solid var(--color-border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  flex-shrink: 0;
-  z-index: 5;
-}
-
-.topbar-left {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-}
-
-.page-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  letter-spacing: 0.01em;
-}
-
-.page-breadcrumb {
-  font-size: 12px;
-  color: var(--color-text-tertiary);
-  font-weight: 400;
-}
-
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.topbar-clock {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  color: var(--color-text-secondary);
-  font-weight: 500;
-}
-
-/* 主内容 */
-.main-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px 24px;
-  min-height: 0;
-}
-
-/* ========== 页面过渡动画 ========== */
-.page-fade-enter-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.page-fade-leave-active {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.page-fade-enter-from {
-  opacity: 0;
-  transform: translateY(12px);
-}
-
-.page-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
-}
+@media (max-width: 420px) { .topbar-right { display: none; } }
 </style>

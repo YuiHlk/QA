@@ -1,7 +1,12 @@
 <template>
   <div class="chat-root">
+    <button class="mobile-config-toggle" type="button" :aria-expanded="isConfigOpen" @click="isConfigOpen = !isConfigOpen">
+      <el-icon><Setting /></el-icon>
+      {{ isConfigOpen ? '收起会话面板' : '会话配置与历史' }}
+    </button>
+    <button v-if="isConfigOpen" class="config-backdrop" type="button" aria-label="关闭会话面板" @click="isConfigOpen = false" />
     <!-- 左侧配置面板 -->
-    <aside class="chat-sidebar">
+    <aside class="chat-sidebar" :class="{ open: isConfigOpen }">
       <!-- 配置区 -->
       <div class="sidebar-block">
         <div class="block-title">
@@ -222,6 +227,7 @@ const inputText = ref('')
 const thinking = ref(false)
 const cancelStream = ref(null)
 const messagesContainer = ref(null)
+const isConfigOpen = ref(false)
 
 const sessions = ref(loadSessions())
 const canSend = computed(() => selectedPromptId.value && !thinking.value)
@@ -380,7 +386,9 @@ function formatTime(date) {
 <style scoped>
 .chat-root {
   display: flex;
-  height: calc(100vh - 116px);
+  height: 100%;
+  min-height: 0;
+  position: relative;
   background: var(--color-bg-surface);
   border-radius: var(--radius-xl);
   border: 1px solid var(--color-border);
@@ -391,7 +399,7 @@ function formatTime(date) {
 /* ======== 左侧栏 ======== */
 .chat-sidebar {
   width: 260px;
-  background: #fafbfc;
+  background: var(--color-bg-elevated);
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
@@ -451,7 +459,7 @@ function formatTime(date) {
   padding: 9px 12px;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
   margin-bottom: 2px;
 }
 
@@ -501,7 +509,7 @@ function formatTime(date) {
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: all var(--transition-fast);
+  transition: opacity var(--transition-fast), color var(--transition-fast), background-color var(--transition-fast);
   flex-shrink: 0;
 }
 
@@ -520,13 +528,15 @@ function formatTime(date) {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
 }
 
 .chat-messages {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 24px;
-  background: #fafbfc;
+  background: var(--color-bg-elevated);
 }
 
 /* 欢迎引导 */
@@ -610,13 +620,13 @@ function formatTime(date) {
 }
 
 .avatar-user {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: var(--color-primary);
   color: #fff;
 }
 
 .avatar-ai {
-  background: linear-gradient(135deg, #0f172a, #1e293b);
-  color: #a5b4fc;
+  background: #17221f;
+  color: #77d0b3;
 }
 
 .thinking-avatar {
@@ -667,10 +677,10 @@ function formatTime(date) {
 }
 
 .msg-row.user .msg-bubble {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  background: var(--color-primary);
   color: #fff;
   border-bottom-right-radius: 4px;
-  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.25);
+  box-shadow: 0 2px 10px rgba(12, 107, 85, 0.18);
 }
 
 .msg-row.assistant .msg-bubble {
@@ -755,7 +765,7 @@ function formatTime(date) {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #6366f1;
+  background: var(--color-primary);
   animation: dot-bounce 1.4s infinite ease-in-out both;
 }
 
@@ -816,5 +826,67 @@ function formatTime(date) {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.mobile-config-toggle,
+.config-backdrop {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .mobile-config-toggle {
+    display: flex;
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 8;
+    align-items: center;
+    gap: 7px;
+    min-height: 34px;
+    padding: 0 11px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: rgba(252, 251, 247, .94);
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .config-backdrop {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 9;
+    border: 0;
+    background: rgba(20, 31, 28, .38);
+  }
+
+  .chat-sidebar {
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 10;
+    width: min(84vw, 310px);
+    transform: translateX(-101%);
+    transition: transform var(--transition-base);
+    box-shadow: var(--shadow-xl);
+  }
+
+  .chat-sidebar.open { transform: translateX(0); }
+  .chat-messages { padding: 62px 18px 20px; }
+  .msg-body { max-width: 88%; }
+  .session-del { opacity: 1; }
+}
+
+@media (max-width: 520px) {
+  .chat-root { border-radius: var(--radius-lg); }
+  .chat-messages { padding-inline: 12px; }
+  .msg-row { gap: 8px; margin-bottom: 18px; }
+  .msg-body { max-width: calc(100% - 42px); }
+  .msg-bubble { padding: 10px 12px; }
+  .chat-input { padding: 12px 12px calc(10px + env(safe-area-inset-bottom)); }
+  .input-footer { display: none; }
+  .welcome-hints { align-items: stretch; flex-direction: column; }
+  .hint-chip { border-radius: var(--radius-md); }
 }
 </style>
