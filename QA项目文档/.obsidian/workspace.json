@@ -1,0 +1,221 @@
+{
+  "main": {
+    "id": "66370524f58384e1",
+    "type": "split",
+    "children": [
+      {
+        "id": "933df4f2b84f2d55",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "a55d5403491ef91c",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "QA项目文档/项目全景分析.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "项目全景分析"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "a4e89b185060a23e",
+    "type": "split",
+    "children": [
+      {
+        "id": "6a992f363bc62c08",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "16c69805d9dbce3c",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "文件列表"
+            }
+          },
+          {
+            "id": "376aac8cc4fbb7c3",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "搜索"
+            }
+          },
+          {
+            "id": "5884472b17de184c",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "书签"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 293.5
+  },
+  "right": {
+    "id": "30b63aa392148de1",
+    "type": "split",
+    "children": [
+      {
+        "id": "deaaa179be6cdd69",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "f22d39a7df314886",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "QA项目学习笔记/AIConfig.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": false
+              },
+              "icon": "links-coming-in",
+              "title": "AIConfig 的反向链接列表"
+            }
+          },
+          {
+            "id": "6d0268af4de9e3d0",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "QA项目学习笔记/AIConfig.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "AIConfig 的出链列表"
+            }
+          },
+          {
+            "id": "fc80cdfb6cb3c903",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "标签"
+            }
+          },
+          {
+            "id": "423b0c5ab493e39a",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "添加笔记属性"
+            }
+          },
+          {
+            "id": "f3ee42b2568aff0d",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "QA项目学习笔记/AIConfig.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "AIConfig 的大纲"
+            }
+          }
+        ],
+        "currentTab": 3
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false,
+      "bases:新建数据库": false
+    }
+  },
+  "active": "16c69805d9dbce3c",
+  "lastOpenFiles": [
+    "QA项目文档/AI应用开发实习生-面试题与标准答案.md",
+    "QA项目文档/项目全景分析.md",
+    "QA项目文档/QA项目学习笔记/Domain/Maven 增量编译 + Lombok 冲突.md",
+    "QA项目文档/QA项目学习笔记/Config/GlobalExceptionHandler.java/SSE流式连接（Server-Sent Events）.md",
+    "QA项目文档/QA项目学习笔记/Config/GlobalExceptionHandler.java/协议升级Upgrade.md",
+    "QA项目文档/QA项目学习笔记/Config/GlobalExceptionHandler.java/全局异常处理.md",
+    "QA项目文档/QA项目学习笔记/Config/Chroma,Ollama,Python-train/Chroma.md",
+    "QA项目文档/QA项目学习笔记/Config/AsyncConfig/异步线程池.md",
+    "QA项目文档/QA项目学习笔记/Config/Chroma,Ollama,Python-train",
+    "QA项目文档/QA项目学习笔记/Config/未命名/Ollama、Chroma、PythonTrain.md",
+    "QA项目文档/QA项目学习笔记/Config/Chroma.md",
+    "QA项目文档/QA项目学习笔记/Config/Chroma",
+    "QA项目文档/项目模块与代码位置对照表.md",
+    "QA项目文档/企业级AI知识库RAG平台-实习项目文档.md",
+    "QA项目文档/QA项目学习笔记/未命名",
+    "QA项目文档/QA项目学习笔记/Domain",
+    "QA项目文档/QA项目学习笔记/提示词工程模块未命名.md",
+    "QA项目文档/QA项目学习笔记/Domain",
+    "QA项目文档/QA项目学习笔记/Domain.md",
+    "QA项目文档/QA项目学习笔记/Config",
+    "Config.md",
+    "QA项目文档/QA项目学习笔记/config.md",
+    "QA项目文档/QA项目学习笔记/AIConfig.md",
+    "QA项目文档/QA项目学习笔记/Config/AsyncConfig",
+    "QA项目文档/QA项目学习笔记/Config/GlobalExceptionHandler.java",
+    "2026-07-03.md",
+    "未命名.base",
+    "QA项目文档/QA项目学习笔记",
+    "欢迎.md",
+    "未命名.md",
+    "线性代数期末试卷核心知识点总结命名.md"
+  ]
+}
