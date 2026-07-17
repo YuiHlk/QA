@@ -1,0 +1,48 @@
+<svg width="1200" height="420" viewBox="0 0 1200 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="60" y1="20" x2="1110" y2="410" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#07111F"/>
+      <stop offset="0.52" stop-color="#102B3F"/>
+      <stop offset="1" stop-color="#091826"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="140" y1="90" x2="940" y2="350" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#53E0C1"/>
+      <stop offset="1" stop-color="#48A8FF"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse">
+      <path d="M 36 0 L 0 0 0 36" fill="none" stroke="#78A9C7" stroke-opacity="0.08" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="420" rx="24" fill="url(#bg)"/>
+  <rect width="1200" height="420" rx="24" fill="url(#grid)"/>
+  <path d="M0 330C204 279 319 390 521 333C723 276 837 194 1200 252V420H0V330Z" fill="#4CD7C1" fill-opacity="0.045"/>
+
+  <g transform="translate(82 74)">
+    <rect width="74" height="30" rx="15" fill="#53E0C1" fill-opacity="0.13" stroke="#53E0C1" stroke-opacity="0.5"/>
+    <text x="37" y="20" fill="#76E8D1" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" text-anchor="middle" letter-spacing="2">代号 QA</text>
+    <text x="0" y="105" fill="#F4FAFF" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="54" font-weight="700">不止让 AI 回答</text>
+    <text x="0" y="172" fill="url(#accent)" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="54" font-weight="700">还要知道它答得怎样</text>
+    <text x="2" y="222" fill="#AAC2D3" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="18">RAG 知识库 · LLM-as-Judge · 消融实验 · Java × Python</text>
+    <text x="2" y="263" fill="#68879B" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" letter-spacing="1">BUILD  →  MEASURE  →  IMPROVE</text>
+  </g>
+
+  <g transform="translate(818 66)">
+    <path d="M152 8L275 79V221L152 292L29 221V79L152 8Z" stroke="#53E0C1" stroke-opacity="0.22" stroke-width="2"/>
+    <path d="M152 45L242 97V203L152 255L62 203V97L152 45Z" stroke="#48A8FF" stroke-opacity="0.25"/>
+    <circle cx="152" cy="150" r="47" fill="#102D3F" stroke="url(#accent)" stroke-width="2" filter="url(#glow)"/>
+    <text x="152" y="143" fill="#F4FAFF" font-family="Segoe UI, sans-serif" font-size="27" font-weight="700" text-anchor="middle">QA</text>
+    <text x="152" y="168" fill="#76E8D1" font-family="Segoe UI, sans-serif" font-size="11" text-anchor="middle" letter-spacing="3">LOOP</text>
+    <circle cx="152" cy="28" r="6" fill="#53E0C1"/>
+    <circle cx="267" cy="91" r="6" fill="#48A8FF"/>
+    <circle cx="267" cy="214" r="6" fill="#53E0C1"/>
+    <circle cx="152" cy="272" r="6" fill="#48A8FF"/>
+    <circle cx="38" cy="214" r="6" fill="#53E0C1"/>
+    <circle cx="38" cy="91" r="6" fill="#48A8FF"/>
+    <path d="M152 47V103M193 126L242 98M193 174L242 202M152 197V254M111 174L63 202M111 126L63 98" stroke="#6EDFCF" stroke-opacity="0.38"/>
+  </g>
+</svg>
